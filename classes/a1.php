@@ -59,8 +59,8 @@ class A1 {
 	public function __construct($config_name = 'a1')
 	{
 		$this->config_name     = $config_name;
-		$this->session         = Session::instance();
 		$this->config          = Kohana::config($config_name);
+		$this->session         = Session::instance( $this->config['session_type'] );
 		$this->user_model      = $this->config['user_model'];
 		$this->columns         = $this->config['columns'];
 		

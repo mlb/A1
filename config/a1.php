@@ -42,5 +42,10 @@ return array(
 		'token'    	=> 'token',  			//token
 		'last_login'=> 'last_login',  //last login (optional)
 		'logins'    => 'logins' 			//login count (optional)
-	)
+	),
+
+	/**
+	 * Session type - native or database
+	 */
+	'session_type' => 'native'
 );
