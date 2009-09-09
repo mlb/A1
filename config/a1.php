@@ -37,11 +37,11 @@ return array(
 	 * Table column names
 	 */
 	'columns' => array(
-		'username'	=> 'username',    //username
-		'password'	=> 'password',    //password
-		'token'    	=> 'token',  			//token
-		'last_login'=> 'last_login',  //last login (optional)
-		'logins'    => 'logins' 			//login count (optional)
+		'username'  => 'username',   //username
+		'password'  => 'password',   //password
+		'token'     => 'token',      //token
+		'last_login'=> 'last_login', //last login (optional)
+		'logins'    => 'logins'      //login count (optional)
 	),
 
 	/**

@@ -20,35 +20,25 @@
  */
 class A1 {
 
-	protected $config_name;
-	protected $session;
-	protected $config;
-	protected $user_model;
-	protected $columns;	
-
-	/**
-	 * Create an instance of A1.
-	 *
-	 * @return  object
-	 */
-	public static function factory($config_name = 'a1')
-	{
-		return new A1($config_name);
-	}
+	protected $_name;
+	protected $_config;
+	protected $_sess;
 
 	/**
 	 * Return a static instance of A1.
 	 *
 	 * @return  object
 	 */
-	public static function instance($config_name = 'a1')
+	public static function instance($_name = 'a1')
 	{
-		static $instance;
+		static $_instances;
 
-		// Load the A1 instance
-		empty($instance[$config_name]) and $instance[$config_name] = new A1($config_name);
+		if ( ! isset($_instances[$_name]))
+		{
+			$_instances[$_name] = new A1($_name);
+		}
 
-		return $instance[$config_name];
+		return $_instances[$_name];
 	}
 
 	/**
@@ -56,16 +46,14 @@ class A1 {
 	 *
 	 * @return  void
 	 */
-	public function __construct($config_name = 'a1')
+	public function __construct($_name = 'a1')
 	{
-		$this->config_name     = $config_name;
-		$this->config          = Kohana::config($config_name);
-		$this->session         = Session::instance( $this->config['session_type'] );
-		$this->user_model      = $this->config['user_model'];
-		$this->columns         = $this->config['columns'];
+		$this->_name       = $_name;
+		$this->_config     = Kohana::config($_name);
+		$this->_sess       = Session::instance( $this->_config['session_type'] );
 		
 		// Clean up the salt pattern and split it into an array
-		$this->config['salt_pattern'] = preg_split('/,\s*/', $this->config['salt_pattern']);
+		$this->_config['salt_pattern'] = preg_split('/,\s*/', $this->_config['salt_pattern']);
 	}
 
 	/**
@@ -86,28 +74,33 @@ class A1 {
 	public function get_user()
 	{
 		// Get the user from the session
-		$user = $this->session->get($this->config['session_key']);
+		$user = $this->_sess->get($this->_config['session_key']);
 
 		// User found in session, return
 		if(is_object($user))
+		{
 			return $user;
+		}
 
 		// Look for user in cookie
-		if( $this->config['lifetime'])
+		if( $this->_config['lifetime'])
 		{
-			if ( ($token = cookie::get('a1_'.$this->config_name.'_autologin')) )
+			if ( ($token = cookie::get('a1_'.$this->_name.'_autologin')) )
 			{
 				$token = explode('.',$token);
 
 				if (count($token) === 2 AND is_string($token[0]) AND is_numeric($token[1]))
 				{
-					// Search user on user ID and token. Because user ID is primary key, this is much faster than
-					// searching on just the token.
-					$user = ORM::factory($this->user_model)->where($this->columns['token'],'=',$token[0])->find($token[1]);
-					// $user = Mango::factory($this->user_model)->find( array($this->columns['token'] => $token[0], '_id' => $token[1]), 1);
+					// Search user on user ID (indexed) and token
+					$user = ORM::factory($this->_config['user_model'])->where($this->_config['columns']['token'],'=',$token[0])->find($token[1]);
+
+					/*$user = Mango::factory($this->_config['user_model'],array(
+						'_id' => $token[1],
+						'token' => $token[0]
+					))->load();*/
 
 					// Found user, complete login and return
-					if ($user->loaded)
+					if ($user->loaded())
 					{
 						$this->complete_login($user,TRUE);
 						return $user;
@@ -122,34 +115,33 @@ class A1 {
 
 	protected function complete_login($user, $remember = FALSE)
 	{
-		if ($remember === TRUE AND $this->config['lifetime'])
+		if ($remember === TRUE AND $this->_config['lifetime'])
 		{
 			// Create token
 			$token = text::random('alnum', 32);
 			
-			$user->{$this->columns['token']} = $token;
+			$user->{$this->_config['columns']['token']} = $token;
 			
-			// TODO: find a better way to store used_id in cookie
-			//cookie::set('a1_'.$this->config_name.'_autologin', $token . '.' . $user->primary_key_value, $this->config['lifetime']);
-			cookie::set('a1_'.$this->config_name.'_autologin', $token . '.' . $user->id, $this->config['lifetime']);
+			//cookie::set('a1_'.$this->_name.'_autologin', $token . '.' . $user->primary_key_value, $this->_config['lifetime']);
+			cookie::set('a1_'.$this->_name.'_autologin', $token . '.' . $user->id, $this->_config['lifetime']);
 		}
 
-		if(isset($this->columns['last_login']))
+		if(isset($this->_config['columns']['last_login']))
 		{
-			$user->{$this->columns['last_login']} = time();
+			$user->{$this->_config['columns']['last_login']} = time();
 		}
 		
-		if(isset($this->columns['logins']))
+		if(isset($this->_config['columns']['logins']))
 		{
-			$user->{$this->columns['logins']}++;
+			$user->{$this->_config['columns']['logins']}++;
 		}
 
 		$user->save();
 
 		// Regenerate session (prevents session fixation attacks)
-		$this->session->regenerate();
+		$this->_sess->regenerate();
 		
-		$this->session->set($this->config['session_key'], $user);
+		$this->_sess->set($this->_config['session_key'], $user);
 	}
 
 	/**
@@ -163,14 +155,25 @@ class A1 {
 	public function login($username, $password, $remember = FALSE)
 	{
 		if (empty($password))
+		{
 			return FALSE;
+		}
 
-		$user = is_object($username) ? $username : ORM::factory($this->user_model)->where($this->columns['username'],'=',$username)->find();
-		// $user = is_object($username) ? $username : Mango::factory($this->user_model)->find( array($this->columns['username'] => $username), 1);
+		$user = is_object($username)
+			? $username
+			: ORM::factory($this->_config['user_model'], array( $this->_config['columns']['username'] => $username) );
 
-		$salt = $this->find_salt($user->{$this->columns['password']});
+		// $user = is_object($username) ? $username : Mango::factory($this->_config['user_model'])->find( array($this->_config['columns']['username'] => $username), 1);
+		/*$user = is_object($username)
+			? $username
+			: Mango::factory($this->_config['user_model'],array(
+					$this->_config['columns']['username'] => $username,
+					'account_id' => Request::$account->_id
+				));*/
 
-		if($this->hash_password($password, $salt) === $user->{$this->columns['password']})
+		$salt = $this->find_salt($user->{$this->_config['columns']['password']});
+
+		if($this->hash_password($password, $salt) === $user->{$this->_config['columns']['password']})
 		{
 			$this->complete_login($user,$remember);
 						
@@ -188,23 +191,23 @@ class A1 {
 	 */
 	public function logout($destroy = FALSE)
 	{
-		if (cookie::get('a1_'.$this->config_name.'_autologin'))
+		if (cookie::get('a1_'.$this->_name.'_autologin'))
 		{
-			cookie::delete('a1_'.$this->config_name.'_autologin');
+			cookie::delete('a1_'.$this->_name.'_autologin');
 		}
 		
 		if ($destroy === TRUE)
 		{
 			// Destroy the session completely
-			$this->session->destroy();
+			$this->_sess->destroy();
 		}
 		else
 		{
 			// Remove the user from the session
-			$this->session->delete($this->config['session_key']);
+			$this->_sess->delete($this->_config['session_key']);
 
 			// Regenerate session_id
-			$this->session->regenerate();
+			$this->_sess->regenerate();
 		}
 
 		return ! $this->logged_in();
@@ -222,7 +225,7 @@ class A1 {
 		if ($salt === FALSE)
 		{
 			// Create a salt seed, same length as the number of offsets in the pattern
-			$salt = substr($this->hash(uniqid(NULL, TRUE)), 0, count($this->config['salt_pattern']));
+			$salt = substr($this->hash(uniqid(NULL, TRUE)), 0, count($this->_config['salt_pattern']));
 		}
 
 		// Password hash that the salt will be inserted into
@@ -237,7 +240,7 @@ class A1 {
 		// Used to calculate the length of splits
 		$last_offset = 0;
 
-		foreach ($this->config['salt_pattern'] as $offset)
+		foreach ($this->_config['salt_pattern'] as $offset)
 		{
 			// Split a new part of the hash off
 			$part = substr($hash, 0, $offset - $last_offset);
@@ -264,7 +267,7 @@ class A1 {
 	 */
 	public function hash($str)
 	{
-		return hash($this->config['hash_method'], $str);
+		return hash($this->_config['hash_method'], $str);
 	}
 
 	/**
@@ -277,7 +280,7 @@ class A1 {
 	{
 		$salt = '';
 
-		foreach ($this->config['salt_pattern'] as $i => $offset)
+		foreach ($this->_config['salt_pattern'] as $i => $offset)
 		{
 			// Find salt characters, take a good long look...
 			$salt .= substr($password, $offset + $i, 1);
