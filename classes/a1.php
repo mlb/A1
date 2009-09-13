@@ -95,7 +95,7 @@ class A1 {
 					$user = ORM::factory($this->_config['user_model'])->where($this->_config['columns']['token'],'=',$token[0])->find($token[1]);
 
 					/*$user = Mango::factory($this->_config['user_model'],array(
-						'_id' => $token[1],
+						'_id'   => $token[1],
 						'token' => $token[0]
 					))->load();*/
 
@@ -137,6 +137,7 @@ class A1 {
 		}
 
 		$user->save();
+		//$user->update();
 
 		// Regenerate session (prevents session fixation attacks)
 		$this->_sess->regenerate();
@@ -163,23 +164,22 @@ class A1 {
 			? $username
 			: ORM::factory($this->_config['user_model'], array( $this->_config['columns']['username'] => $username) );
 
-		// $user = is_object($username) ? $username : Mango::factory($this->_config['user_model'])->find( array($this->_config['columns']['username'] => $username), 1);
 		/*$user = is_object($username)
 			? $username
 			: Mango::factory($this->_config['user_model'],array(
 					$this->_config['columns']['username'] => $username,
-					'account_id' => Request::$account->_id
-				));*/
+					//'account_id'                          => Request::$account->_id
+				))->load();*/
 
 		$salt = $this->find_salt($user->{$this->_config['columns']['password']});
 
 		if($this->hash_password($password, $salt) === $user->{$this->_config['columns']['password']})
 		{
 			$this->complete_login($user,$remember);
-						
+
 			return TRUE;
 		}
-		
+
 		return FALSE;
 	}
 
