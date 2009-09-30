@@ -54,6 +54,9 @@ class A1 {
 		
 		// Clean up the salt pattern and split it into an array
 		$this->_config['salt_pattern'] = preg_split('/,\s*/', $this->_config['salt_pattern']);
+
+		// Generate session key
+		$this->_config['session_key'] = 'a1_' . $this->_name;
 	}
 
 	/**
@@ -168,7 +171,7 @@ class A1 {
 			? $username
 			: Mango::factory($this->_config['user_model'],array(
 					$this->_config['columns']['username'] => $username,
-					//'account_id'                          => Request::$account->_id
+					'account_id'                          => Request::$account->_id
 				))->load();*/
 
 		$salt = $this->find_salt($user->{$this->_config['columns']['password']});

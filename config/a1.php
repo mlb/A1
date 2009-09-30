@@ -27,11 +27,6 @@ return array(
 	 * User model
 	 */
 	'user_model' => 'user',
-
-	/**
-	 * Set the session key that will be used to store the current user.
-	 */
-	'session_key' => 'a1_user',
  
 	/**
 	 * Table column names
