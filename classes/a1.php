@@ -174,13 +174,16 @@ class A1 {
 					'account_id'                          => Request::$account->_id
 				))->load();*/
 
-		$salt = $this->find_salt($user->{$this->_config['columns']['password']});
-
-		if($this->hash_password($password, $salt) === $user->{$this->_config['columns']['password']})
+		if ( $user->loaded())
 		{
-			$this->complete_login($user,$remember);
-
-			return TRUE;
+			$salt = $this->find_salt($user->{$this->_config['columns']['password']});
+	
+			if($this->hash_password($password, $salt) === $user->{$this->_config['columns']['password']})
+			{
+				$this->complete_login($user,$remember);
+	
+				return TRUE;
+			}
 		}
 
 		return FALSE;
