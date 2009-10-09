@@ -22,7 +22,7 @@ class A1 {
 
 	protected $_name;
 	protected $_config;
-	protected $_sess;
+	public $_sess;
 
 	/**
 	 * Return a static instance of A1.
