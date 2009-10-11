@@ -154,7 +154,7 @@ class A1 {
 	 * @param   string   username to log in
 	 * @param   string   password to check against
 	 * @param   boolean  enable auto-login
-	 * @return  boolean
+	 * @return  mixed    user if succesfull, FALSE otherwise
 	 */
 	public function login($username, $password, $remember = FALSE)
 	{
@@ -182,7 +182,7 @@ class A1 {
 			{
 				$this->complete_login($user,$remember);
 	
-				return TRUE;
+				return $user;
 			}
 		}
 
