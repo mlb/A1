@@ -29,7 +29,7 @@ abstract class Model_A1_ORM_User extends ORM {
 	{
 		if(array_key_exists( $this->_columns['password'] ,$this->_changed))
 		{
-			$this->_object[ $this->_columns['password'] ] = A1::instance($this->_config)->hash_password($this->_object[ $this->_columns['password'] ]);
+			$this->_object[ $this->_columns['password'] ] = A1_ORM::instance($this->_config)->hash_password($this->_object[ $this->_columns['password'] ]);
 		}
 
 		return parent::save();
