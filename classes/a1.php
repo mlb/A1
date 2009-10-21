@@ -18,28 +18,10 @@
  * @license    http://layerful.org/license MIT
  * @since    0.3.0
  */
-class A1 {
-
+abstract class A1 {
 	protected $_name;
 	protected $_config;
 	public $_sess;
-
-	/**
-	 * Return a static instance of A1.
-	 *
-	 * @return  object
-	 */
-	public static function instance($_name = 'a1')
-	{
-		static $_instances;
-
-		if ( ! isset($_instances[$_name]))
-		{
-			$_instances[$_name] = new A1($_name);
-		}
-
-		return $_instances[$_name];
-	}
 
 	/**
 	 * Loads Session and configuration options.
@@ -94,17 +76,10 @@ class A1 {
 
 				if (count($token) === 2 AND is_string($token[0]) AND is_numeric($token[1]))
 				{
-					// Search user on user ID (indexed) and token
-					$user = ORM::factory($this->_config['user_model'])->where($this->_config['columns']['token'],'=',$token[0])->find($token[1]);
-
-					/*$user = Mango::factory($this->_config['user_model'],array(
-						'_id'   => $token[1],
-						'token' => $token[0]
-					))->load();*/
+					$user = $this->dba_load_user_by_token($token[1], $token[0]);
 
 					// Found user, complete login and return
-					if ($user->loaded())
-					{
+					if($user) {
 						$this->complete_login($user,TRUE);
 						return $user;
 					}
@@ -123,7 +98,7 @@ class A1 {
 			// Create token
 			$token = text::random('alnum', 32);
 			
-			$user->{$this->_config['columns']['token']} = $token;
+			$this->dba_set_user_token($user, $token);
 			
 			//cookie::set('a1_'.$this->_name.'_autologin', $token . '.' . $user->primary_key_value, $this->_config['lifetime']);
 			cookie::set('a1_'.$this->_name.'_autologin', $token . '.' . $user->id, $this->_config['lifetime']);
@@ -131,16 +106,15 @@ class A1 {
 
 		if(isset($this->_config['columns']['last_login']))
 		{
-			$user->{$this->_config['columns']['last_login']} = time();
+			$this->dba_set_user_last_login($user, time());
 		}
 		
 		if(isset($this->_config['columns']['logins']))
 		{
-			$user->{$this->_config['columns']['logins']}++;
+			$this->dba_increment_user_logins($user);
 		}
 
-		$user->save();
-		//$user->update();
+		$this->dba_save_user($user);
 
 		// Regenerate session (prevents session fixation attacks)
 		$this->_sess->regenerate();
@@ -165,20 +139,14 @@ class A1 {
 
 		$user = is_object($username)
 			? $username
-			: ORM::factory($this->_config['user_model'], array( $this->_config['columns']['username'] => $username) );
+			: $this->dba_load_user_by_username($username);
 
-		/*$user = is_object($username)
-			? $username
-			: Mango::factory($this->_config['user_model'],array(
-					$this->_config['columns']['username'] => $username,
-					'account_id'                          => Request::$account->_id
-				))->load();*/
-
-		if ( $user->loaded())
+		if ($user)
 		{
-			$salt = $this->find_salt($user->{$this->_config['columns']['password']});
+			$password_in_db = $this->dba_get_user_password($user);
+			$salt = $this->find_salt($password_in_db);
 	
-			if($this->hash_password($password, $salt) === $user->{$this->_config['columns']['password']})
+			if($this->hash_password($password, $salt) === $password_in_db)
 			{
 				$this->complete_login($user,$remember);
 	
@@ -295,4 +263,14 @@ class A1 {
 		return $salt;
 	}
 
+	/* Abstract methods for classes that extend A1 as database abstractors */
+	abstract protected function dba_load_user_by_token($user_id, $token);
+	abstract protected function dba_load_user_by_username($username);
+	abstract protected function dba_set_user_token($user, $token);
+	abstract protected function dba_set_user_last_login($user, $time);
+	abstract protected function dba_increment_user_logins($user);
+	abstract protected function dba_save_user($user);
+	abstract protected function dba_get_user_password($user);
+
 } // End A1
+
