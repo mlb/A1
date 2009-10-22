@@ -56,9 +56,9 @@ class A1_Mango extends A1 {
                 $user->update();
         }
 
-        protected function dba_get_user_password($user) {
+        protected function dba_validate_user_password($user, $password) {
 		//TOOD: copied from sprig, fix
-		//return $user->{$this->_config['columns']['password']};
-		return '';
+		//return ($user->{$this->_config['columns']['password']} == $password);
+		return false;
         }
 } // End A1_Mango

@@ -24,16 +24,4 @@ abstract class Model_A1_Sprig_User extends Sprig {
 
 		parent::__construct($id);
 	}
-
-	public function update()
-	{
-		$passcol = $this->_columns['password'];
-
-		if($this->changed($passcol))
-		{
-			$this->$passcol = A1_Sprig::instance($this->_config)->hash_password($this->$passcol);
-		}
-
-		return parent::update();
-	}
 }

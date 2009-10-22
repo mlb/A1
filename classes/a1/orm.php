@@ -55,8 +55,15 @@ class A1_ORM extends A1 {
 		$user->save();
 	}
 
-	protected function dba_get_user_password($user) {
-		return $user->{$this->_config['columns']['password']};
-	}
+        protected function dba_validate_user_password($user, $password) {
+                $password_in_db = $user->{this->_config['columns']['password']};
+                $salt = $this->find_salt($password_in_db);
+                
+                if($this->hash_password($password, $salt) === $password_in_db)
+                {       
+                        return true;
+                }
 
+                return false;
+        }
 } // End A1_ORM

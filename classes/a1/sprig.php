@@ -59,8 +59,8 @@ class A1_Sprig extends A1 {
 		$user->update();
 	}
 
-	protected function dba_get_user_password($user) {
-		return $user->{$this->_config['columns']['password']};
+	protected function dba_validate_user_password($user, $password) {
+		return ($user->{$this->_config['columns']['password']} == $password);
 	}
 
 } // End A1_Sprig

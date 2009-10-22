@@ -143,13 +143,8 @@ abstract class A1 {
 
 		if ($user)
 		{
-			$password_in_db = $this->dba_get_user_password($user);
-			$salt = $this->find_salt($password_in_db);
-	
-			if($this->hash_password($password, $salt) === $password_in_db)
-			{
+			if($this->dba_validate_user_password($user, $password)) {
 				$this->complete_login($user,$remember);
-	
 				return $user;
 			}
 		}
@@ -270,7 +265,7 @@ abstract class A1 {
 	abstract protected function dba_set_user_last_login($user, $time);
 	abstract protected function dba_increment_user_logins($user);
 	abstract protected function dba_save_user($user);
-	abstract protected function dba_get_user_password($user);
+	abstract protected function dba_validate_user_password($user, $password);
 
 } // End A1
 
